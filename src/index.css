@@ -1,0 +1,90 @@
+@import "tailwindcss";
+
+@theme {
+  --color-secondary: rgb(25, 25, 57);
+  --color-primary: #f9ce36;
+  --color-background: rgb(9, 12, 29);
+  --color-textColor: rgb(151, 137, 205) .;
+}
+
+:root {
+  font-family: "Montserrat", sans-serif;
+  font-optical-sizing: auto;
+  font-weight: 500;
+  font-style: normal;
+  background-color: rgb(9, 12, 29);
+  color-scheme: light dark;
+  color: white;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+.custom-logout-modal .ant-modal-content {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+input,
+select,
+textarea {
+  font-size: 16px !important;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+@layer base {
+  /* Make all inputs, selects, textareas use your dark theme */
+  input,
+  select,
+  textarea {
+    @apply bg-background/80 border border-gray-600 text-[rgb(151,137,205)]/90 placeholder-gray-400;
+  }
+
+  /* Focus ring with your brand color */
+  input:focus,
+  select:focus,
+  textarea:focus {
+    @apply outline-none ring-2 ring-primary;
+  }
+
+  /* Ant Design Select box */
+  .ant-select-selector {
+    @apply bg-background/80 border border-gray-600 text-[rgb(151,137,205)]/90 rounded-lg;
+  }
+
+  /* Ant Design placeholder */
+  .ant-select-selection-placeholder {
+    @apply text-gray-400;
+  }
+
+  /* Ant Design dropdown menu */
+  .ant-select-dropdown {
+    @apply bg-background/90 text-[rgb(151,137,205)]/90 rounded-lg border border-gray-700;
+  }
+}
+html,
+body {
+  height: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+/* <style jsx>{`
+  @keyframes fadeIn {
+    from {
+      transform: scale(0.9);
+      opacity: 0;
+    }
+    to {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+  .animate-fadeIn {
+    animation: fadeIn 0.25s ease-out;
+  }
+`}</style> */
