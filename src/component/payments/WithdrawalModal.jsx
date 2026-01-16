@@ -6,7 +6,6 @@ import BaseClass from "../../services/BaseClass";
 import toast from "react-hot-toast";
 
 import {
-  useIssueKey,
   useUpdateBalance,
   useWithdraw,
 } from "../../hooks/usePayment";
@@ -17,20 +16,35 @@ export default function WithdrawalModal({ onClose }) {
   const presetAmounts = [100, 250, 500, 1000, 1500];
   const { balance } = useUpdateBalance();
   const { withdrawingCash, isLoading: isWithdrawing } = useWithdraw();
-  const { creatingKey } = useIssueKey();
   const baseClass = new BaseClass();
+
+  // Format phone number to include country code (254)
+  const formatPhoneNumber = (phone) => {
+    if (!phone) return null;
+    // Remove any spaces, dashes, or non-numeric characters
+    let cleaned = phone.replace(/\D/g, '');
+    // If it starts with 0, replace with 254
+    if (cleaned.startsWith('0')) {
+      cleaned = '254' + cleaned.substring(1);
+    }
+    // If it doesn't start with 254, add it
+    if (!cleaned.startsWith('254')) {
+      cleaned = '254' + cleaned;
+    }
+    return cleaned;
+  };
 
   const handlePresetClick = (val) => setWithdrawAmount(val);
   function handleWithdraw() {
     debouncedWithdraw(withdrawAmount, () => {
       if (isWithdrawing) return;
 
-      if (balance?.walletBalance === 0)
+      if (balance?.balance === 0 || !balance?.balance)
         return toast.error(
           "You don't have enough amount to make this transaction"
         );
 
-      if (+withdrawAmount > balance?.walletBalance) {
+      if (+withdrawAmount > balance?.balance) {
         return toast.error(
           "You don't have enough amount to make this transaction"
         );
@@ -40,32 +54,27 @@ export default function WithdrawalModal({ onClose }) {
         return toast.error("Withdrawals start at Ksh 100 and above.");
       }
 
-      creatingKey(
-        {},
+      const phoneNumber = formatPhoneNumber(baseClass?.phone);
+      if (!phoneNumber) {
+        return toast.error("Phone number is required for withdrawal");
+      }
+
+      withdrawingCash(
+        { 
+          msisdn: phoneNumber, 
+          amount: +withdrawAmount, 
+          info1: "Payment for services" 
+        },
         {
-          onSuccess: (data) => {
-            if (data?.status == true) {
-              const issueKey = data?.withdrawTransactionKey;
-              withdrawingCash(
-                { withdrawAmount, issueKey },
-                {
-                  onSuccess: () => {
-                    setWithdrawAmount("");
-                  },
-                  onError: (err) => {
-                    toast.error(
-                      err?.message ||
-                        `Withdrawal of Ksh ${withdrawAmount} failed`
-                    );
-                  },
-                }
-              );
-            } else {
-              toast.error("Withdrawal failed");
-            }
+          onSuccess: () => {
+            setWithdrawAmount(100);
+            onClose();
           },
           onError: (err) => {
-            toast.error(err?.message || "Failed to create withdrawal key");
+            toast.error(
+              err?.message ||
+                `Withdrawal of Ksh ${withdrawAmount} failed`
+            );
           },
         }
       );

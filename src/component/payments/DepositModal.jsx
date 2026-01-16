@@ -153,10 +153,7 @@ export default function PaymentModal({ isOpen, setIsOpen }) {
                 <h3 className="text-lg font-semibold mb-3 text-white">
                   Deposit via Telkom
                 </h3>
-                <p className="text-sm mb-2 text-gray-400">
-                  Use your number below to make payment:
-                </p>
-
+                
                 <div className="mt-4">
                   <label className="block text-sm text-gray-400 mb-1">
                     Enter Amount (KES)
@@ -174,11 +171,20 @@ export default function PaymentModal({ isOpen, setIsOpen }) {
                   </div>
                 </div>
 
-                <ul className="list-disc list-inside mt-4 text-sm text-gray-400 space-y-1">
-                  <li>Send payment via Telkom to the number above.</li>
-                  <li>Ensure the amount matches your transaction total.</li>
-                  <li>Confirm after payment to complete your order.</li>
-                </ul>
+                <div className="mt-6 bg-[#0e0e0e] border border-[#333] rounded-lg p-4">
+                  <h4 className="text-sm font-semibold text-white mb-3">Follow these steps to deposit:</h4>
+                  <ol className="list-decimal list-inside space-y-2 text-sm text-gray-300">
+                    <li>Dial <span className="font-mono font-semibold text-[#f5c542]">*334#</span></li>
+                    <li>Select Option <span className="font-semibold text-[#f5c542]">6</span> Lipa na M-PESA</li>
+                    <li>Select Option <span className="font-semibold text-[#f5c542]">4</span> T-Kash</li>
+                    <li>Select Option <span className="font-semibold text-[#f5c542]">1</span> Pay Bill</li>
+                    <li>Enter <span className="font-mono font-semibold text-[#f5c542]">290077</span></li>
+                    <li>Account: enter your phone number</li>
+                    <li>Enter Amount</li>
+                    <li>Press <span className="font-semibold text-[#f5c542]">1</span> to confirm</li>
+                    <li>Enter M-Pesa Pin</li>
+                  </ol>
+                </div>
 
                 <button disabled={isMakingPayment} onClick={handleTelkomPayment} className="mt-6 w-full py-3 bg-[#f5c542] text-black font-semibold rounded-xl hover:bg-[#ffd84f] transition">
                 {isMakingPayment ? "Processing Payment" : "Complete Payment"}  

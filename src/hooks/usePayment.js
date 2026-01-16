@@ -38,18 +38,20 @@ export function useWithdraw() {
     isPending: isLoading,
     error,
   } = useMutation({
-    mutationFn: paymentService.withdrawCash.bind(paymentService),
+    mutationFn: paymentService.withdrawViaTelkom.bind(paymentService),
     onSuccess: (res) => {
-      if (res.status !== "success") {
+      if (res?.creditSyncResponse?.resultCode !== "0") {
         toast.error(
-          res?.data?.message ?? "Something went wrong try again later"
+          res?.creditSyncResponse?.message ?? "Something went wrong try again later"
         );
       } else {
         // ✅ invalidate balance after withdrawal
         queryClient.invalidateQueries({ queryKey: ["user-balance"] });
-        navigate(`/withdraw/callback/${res?.data?.transactionsID}`);
-        toast.success(`Withdrawal was successful`);
+        toast.success("Withdrawal in progress");
       }
+    },
+    onError: (err) => {
+      toast.error(err?.message ?? "Something went wrong");
     },
   });
   return { withdrawingCash, isLoading, error };

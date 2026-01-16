@@ -145,4 +145,31 @@ export class PaymentService extends BaseClass {
       throw new Error(error?.message || "Something went wrong");
     }
   }
+
+  async withdrawViaTelkom({ msisdn, amount, info1 }) {
+    try {
+      const payload = {
+        msisdn: msisdn,
+        amount: +amount,
+        info1: info1 || "Payment for services"
+      };
+
+      const response = await fetch('http://104.248.212.223:5001/api/b2c/payment', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to process withdrawal');
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      throw new Error(error?.message || "Something went wrong");
+    }
+  }
 }
