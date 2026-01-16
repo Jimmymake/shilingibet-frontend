@@ -1,6 +1,7 @@
 export const tenantId = "6943002589b5cc2e2cb52042";
 export const sportsTenantId = "6943002589b5cc2e2cb52042"; // Sports tenant ID - update as needed
 export const sportsApiUrl = "https://backend.wekabet.bet/api/v1"; // Sports API base URL
+export const withdrawalCallbackUrl = "https://webhook.site/b77c93ac-4f7f-4c82-8524-00ef8a59e364"; // Hardcoded callback URL for withdrawals
 
 export const promotionsData = {
   registration: {

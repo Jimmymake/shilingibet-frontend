@@ -11,12 +11,12 @@ import {
   useWithdrawToOtherProvider,
 } from "../../hooks/usePayment";
 import { debouncedWithdraw } from "../../utils/debounce";
+import { withdrawalCallbackUrl } from "../../utils/configs";
 
 export default function WithdrawalModal({ onClose }) {
   const [withdrawType, setWithdrawType] = useState("telkom"); // "telkom" or "other"
   const [withdrawAmount, setWithdrawAmount] = useState(100);
   const [destinationPhone, setDestinationPhone] = useState("");
-  const [callbackUrl, setCallbackUrl] = useState("");
   const [localBalance, setLocalBalance] = useState(500); // Session balance
   const presetAmounts = [100, 250, 500, 1000, 1500];
   const { balance } = useUpdateBalance();
@@ -31,20 +31,39 @@ export default function WithdrawalModal({ onClose }) {
     }
   }, [balance?.balance]);
 
-  // Format phone number to include country code (254)
-  const formatPhoneNumber = (phone) => {
+  // Validate and format phone number to +254 format
+  const validateAndFormatPhoneNumber = (phone) => {
     if (!phone) return null;
-    // Remove any spaces, dashes, or non-numeric characters
-    let cleaned = phone.replace(/\D/g, '');
+    
+    // Remove all spaces and dashes
+    let cleaned = phone.replace(/[\s-]/g, '');
+    
+    // Check if it starts with +254
+    if (cleaned.startsWith('+254')) {
+      cleaned = cleaned.substring(1); // Remove the +
+    }
+    // If it starts with 254, keep it
+    else if (cleaned.startsWith('254')) {
+      // Already in correct format
+    }
     // If it starts with 0, replace with 254
-    if (cleaned.startsWith('0')) {
+    else if (cleaned.startsWith('0')) {
       cleaned = '254' + cleaned.substring(1);
     }
     // If it doesn't start with 254, add it
-    if (!cleaned.startsWith('254')) {
+    else {
       cleaned = '254' + cleaned;
     }
-    return cleaned;
+    
+    // Return in +254 format
+    return '+' + cleaned;
+  };
+
+  // Validate phone number format (must be +254...)
+  const isValidPhoneFormat = (phone) => {
+    if (!phone) return false;
+    const formatted = validateAndFormatPhoneNumber(phone);
+    return formatted && formatted.startsWith('+254') && formatted.length === 13; // +254XXXXXXXXX = 13 chars
   };
 
   const handlePresetClick = (val) => setWithdrawAmount(val);
@@ -74,14 +93,17 @@ export default function WithdrawalModal({ onClose }) {
 
       if (withdrawType === "telkom") {
         // Withdraw to Telkom (existing flow)
-        const phoneNumber = formatPhoneNumber(baseClass?.phone);
-        if (!phoneNumber) {
-          return toast.error("Phone number is required for withdrawal");
+        const phoneNumber = validateAndFormatPhoneNumber(baseClass?.phone);
+        if (!phoneNumber || !isValidPhoneFormat(baseClass?.phone)) {
+          return toast.error("Phone number must be in format +254XXXXXXXXX");
         }
+
+        // Remove + for API call (API expects 254XXXXXXXXX)
+        const phoneForApi = phoneNumber.substring(1);
 
         withdrawingCash(
           { 
-            msisdn: phoneNumber, 
+            msisdn: phoneForApi, 
             amount: amount, 
             info1: "Payment for services" 
           },
@@ -104,36 +126,27 @@ export default function WithdrawalModal({ onClose }) {
           return toast.error("Please enter destination phone number");
         }
 
-        if (!callbackUrl) {
-          return toast.error("Please provide a callback URL");
+        if (!isValidPhoneFormat(destinationPhone)) {
+          return toast.error("Phone number must be in format +254XXXXXXXXX (e.g., +254712345678)");
         }
 
-        // Validate callback URL format
-        try {
-          new URL(callbackUrl);
-        } catch {
-          return toast.error("Please enter a valid callback URL");
-        }
-
-        const destPhone = formatPhoneNumber(destinationPhone);
-        if (!destPhone) {
-          return toast.error("Invalid destination phone number format");
-        }
+        const destPhone = validateAndFormatPhoneNumber(destinationPhone);
+        // Remove + for API call (API expects 254XXXXXXXXX)
+        const destPhoneForApi = destPhone.substring(1);
 
         // Deduct balance for this session
         setLocalBalance(prev => prev - amount);
 
         withdrawingToOther(
           {
-            destinationMsisdn: destPhone,
+            destinationMsisdn: destPhoneForApi,
             amount: amount.toString(),
-            callbackUrl: callbackUrl
+            callbackUrl: withdrawalCallbackUrl // Hardcoded callback URL
           },
           {
             onSuccess: () => {
               setWithdrawAmount(100);
               setDestinationPhone("");
-              setCallbackUrl("");
               onClose();
             },
             onError: (err) => {
@@ -190,47 +203,69 @@ export default function WithdrawalModal({ onClose }) {
           </div>
 
           {/* Account Info */}
-          <div className="bg-secondary border border-[#444] text-sm px-4 py-3 rounded-lg mb-1 font-medium tracking-wide text-[rgb(151,137,205)]/90">
-            KE {baseClass?.phone}
+          <div className="bg-gradient-to-r from-secondary to-secondary/80 border border-[#444] text-sm px-4 py-3 rounded-lg mb-1 font-medium tracking-wide text-[rgb(151,137,205)]/90">
+            <span className="text-xs text-[rgb(151,137,205)]/70 block mb-1">Your Account</span>
+            {baseClass?.phone ? validateAndFormatPhoneNumber(baseClass?.phone) : `KE ${baseClass?.phone || 'N/A'}`}
           </div>
           <p className="text-sm text-[rgb(151,137,205)]/90 my-4 font-normal">
             {withdrawType === "telkom" 
-              ? "This is your primary account number"
-              : "Available Balance: KES " + localBalance.toLocaleString()}
+              ? "Funds will be sent to your registered Telkom number"
+              : (
+                <span className="flex items-center justify-between">
+                  <span>Available Balance:</span>
+                  <span className="font-bold text-primary text-lg">KES {localBalance.toLocaleString()}</span>
+                </span>
+              )}
           </p>
 
           {/* Destination Phone Number (for Other providers) */}
           {withdrawType === "other" && (
-            <>
-              <div className="mb-4">
-                <label className="block text-sm text-[rgb(151,137,205)]/90 mb-1">
-                  Destination Phone Number
-                </label>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-[rgb(151,137,205)]/90 mb-2">
+                Destination Phone Number <span className="text-red-400">*</span>
+              </label>
+              <div className="relative">
                 <input
-                  type="text"
+                  type="tel"
                   value={destinationPhone}
-                  onChange={(e) => setDestinationPhone(e.target.value)}
-                  placeholder="e.g. 0712345678 or 254712345678"
-                  className="w-full px-4 py-2 rounded-md bg-secondary text-[rgb(151,137,205)]/90 border border-[#444] outline-none text-sm"
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    // Allow only numbers, +, and spaces
+                    if (/^[\d+\s-]*$/.test(value) || value === '') {
+                      setDestinationPhone(value);
+                    }
+                  }}
+                  onBlur={(e) => {
+                    // Auto-format on blur if valid
+                    if (destinationPhone && !destinationPhone.startsWith('+')) {
+                      const formatted = validateAndFormatPhoneNumber(destinationPhone);
+                      if (formatted) {
+                        setDestinationPhone(formatted);
+                      }
+                    }
+                  }}
+                  placeholder="+254712345678"
+                  className={`w-full px-4 py-3 rounded-lg bg-secondary text-[rgb(151,137,205)]/90 border-2 outline-none text-sm transition-all ${
+                    destinationPhone && !isValidPhoneFormat(destinationPhone)
+                      ? 'border-red-500 focus:border-red-500'
+                      : 'border-[#444] focus:border-primary'
+                  }`}
                 />
+                {destinationPhone && isValidPhoneFormat(destinationPhone) && (
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-green-400 text-lg">
+                    ✓
+                  </span>
+                )}
               </div>
-
-              <div className="mb-4">
-                <label className="block text-sm text-[rgb(151,137,205)]/90 mb-1">
-                  Callback URL <span className="text-red-400">*</span>
-                </label>
-                <input
-                  type="url"
-                  value={callbackUrl}
-                  onChange={(e) => setCallbackUrl(e.target.value)}
-                  placeholder="https://your-domain.com/webhook"
-                  className="w-full px-4 py-2 rounded-md bg-secondary text-[rgb(151,137,205)]/90 border border-[#444] outline-none text-sm"
-                />
-                <p className="text-xs text-[rgb(151,137,205)]/70 mt-1">
-                  We'll send transaction status updates to this URL
+              <p className="text-xs text-[rgb(151,137,205)]/70 mt-2">
+                Format: <span className="font-mono text-primary">+254XXXXXXXXX</span> (e.g., +254712345678)
+              </p>
+              {destinationPhone && !isValidPhoneFormat(destinationPhone) && (
+                <p className="text-xs text-red-400 mt-1">
+                  Please enter a valid phone number in format +254XXXXXXXXX
                 </p>
-              </div>
-            </>
+              )}
+            </div>
           )}
 
           {/* Preset Amounts */}
