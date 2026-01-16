@@ -15,7 +15,7 @@ export function useDeposit() {
     mutationFn: paymentService.depositCash.bind(paymentService),
     onSuccess: (res) => {
       toast.success(
-        "Check your phone. When prompted, enter your M-Pesa pin on your phone to complete payment"
+        "Check your phone. When prompted, enter your Telkom pin on your phone to complete payment"
       ); // ✅ invalidate balance after deposit
       queryClient.invalidateQueries({ queryKey: ["user-balance"] });
       navigate(`/callback/${res?.data?.txnID}`);
@@ -62,7 +62,15 @@ export function useUpdateBalance() {
     queryFn: paymentService.updateBalance.bind(paymentService),
   });
 
-  return { balance, isLoading };
+  // Hardcode balance to KES 500
+  const hardcodedBalance = {
+    balance: 500,
+    referralBonus: balance?.referralBonus ?? 0,
+    cashback: balance?.cashback ?? 0,
+    referralsCount: balance?.referralsCount ?? 0,
+  };
+
+  return { balance: hardcodedBalance, isLoading };
 }
 export function useTransactionsHistory() {
   const paymentService = new PaymentService();

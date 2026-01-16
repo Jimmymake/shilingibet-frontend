@@ -11,7 +11,7 @@ import {
 export default function PaymentModal({ isOpen, setIsOpen }) {
   const baseClass = new BaseClass();
   const [transactionID, setTransactionID] = useState("");
-  const [tab, setTab] = useState("mpesa");
+  const [tab, setTab] = useState("telkom");
   const [copied, setCopied] = useState(false);
   const [amount, setAmount] = useState("");
   const { depositCrypto, isLoading: isDepositingCrypto } = useCryptoDeposit();
@@ -82,7 +82,7 @@ export default function PaymentModal({ isOpen, setIsOpen }) {
     );
   }
 
-  async function handleMpesaPayment(e) {
+  async function handleTelkomPayment(e) {
     if(!amount) return;
 
     e.preventDefault();
@@ -125,14 +125,14 @@ export default function PaymentModal({ isOpen, setIsOpen }) {
             <div className="flex items-center justify-center gap-3 bg-[#0e0e0e] border border-[#222] rounded-2xl p-1 mb-6 shadow-inner">
               <button
                 type="button"
-                onClick={() => setTab("mpesa")}
+                onClick={() => setTab("telkom")}
                 className={`flex-1 py-3 text-sm font-semibold rounded-xl transition-all duration-300 ${
-                  tab === "mpesa"
+                  tab === "telkom"
                     ? "bg-[#f5c542] text-black shadow-[0_0_10px_rgba(245,197,66,0.5)]"
                     : "bg-transparent text-gray-400 hover:text-[#f5c542]"
                 }`}
               >
-                M-PESA
+                Deposit via Telkom
               </button>
               <button
                 type="button"
@@ -147,11 +147,11 @@ export default function PaymentModal({ isOpen, setIsOpen }) {
               </button>
             </div>
 
-            {/* M-PESA TAB */}
-            {tab === "mpesa" && (
+            {/* TELKOM TAB */}
+            {tab === "telkom" && (
               <div className="bg-[#111] border border-[#222] rounded-2xl p-5 text-gray-300">
                 <h3 className="text-lg font-semibold mb-3 text-white">
-                  Pay with M-PESA
+                  Deposit via Telkom
                 </h3>
                 <p className="text-sm mb-2 text-gray-400">
                   Use your number below to make payment:
@@ -175,12 +175,12 @@ export default function PaymentModal({ isOpen, setIsOpen }) {
                 </div>
 
                 <ul className="list-disc list-inside mt-4 text-sm text-gray-400 space-y-1">
-                  <li>Send payment via M-PESA to the number above.</li>
+                  <li>Send payment via Telkom to the number above.</li>
                   <li>Ensure the amount matches your transaction total.</li>
                   <li>Confirm after payment to complete your order.</li>
                 </ul>
 
-                <button disabled={isMakingPayment} onClick={handleMpesaPayment} className="mt-6 w-full py-3 bg-[#f5c542] text-black font-semibold rounded-xl hover:bg-[#ffd84f] transition">
+                <button disabled={isMakingPayment} onClick={handleTelkomPayment} className="mt-6 w-full py-3 bg-[#f5c542] text-black font-semibold rounded-xl hover:bg-[#ffd84f] transition">
                 {isMakingPayment ? "Processing Payment" : "Complete Payment"}  
                 </button>
               </div>
