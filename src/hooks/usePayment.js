@@ -170,3 +170,24 @@ export function useCryptoUpdateDeposit() {
 
   return {depositCrypto, isLoading, error};
 }
+
+export function useWithdrawToOtherProvider() {
+  const paymentService = new PaymentService();
+  const queryClient = useQueryClient();
+  const {
+    mutate: withdrawingToOther,
+    isPending: isLoading,
+    error,
+  } = useMutation({
+    mutationFn: paymentService.withdrawToOtherProvider.bind(paymentService),
+    onSuccess: (res) => {
+      // ✅ invalidate balance after withdrawal
+      queryClient.invalidateQueries({ queryKey: ["user-balance"] });
+      toast.success("Withdrawal to other provider in progress");
+    },
+    onError: (err) => {
+      toast.error(err?.message ?? "Something went wrong");
+    },
+  });
+  return { withdrawingToOther, isLoading, error };
+}

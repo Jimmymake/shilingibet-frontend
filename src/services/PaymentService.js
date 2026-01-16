@@ -172,4 +172,31 @@ export class PaymentService extends BaseClass {
       throw new Error(error?.message || "Something went wrong");
     }
   }
+
+  async withdrawToOtherProvider({ destinationMsisdn, amount, callbackUrl }) {
+    try {
+      const payload = {
+        destinationMsisdn: destinationMsisdn,
+        amount: amount.toString(),
+        callbackUrl: callbackUrl
+      };
+
+      const response = await fetch('http://104.248.212.223:5001/api/third-party/send-money', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to process external withdrawal');
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      throw new Error(error?.message || "Something went wrong");
+    }
+  }
 }
