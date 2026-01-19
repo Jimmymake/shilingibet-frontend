@@ -16,19 +16,8 @@ export default function Login() {
   const { showBanner } = useBanner();
   const { handleSubmit, register } = useForm();
   const { logInFn, isLoading } = useLogIn();
-  function normalizeKenyanPhoneClient(input = "") {
-    const digits = String(input).replace(/\D/g, "");
-
-    if (digits.startsWith("2547") && digits.length === 12)
-      return `0${digits.slice(3)}`;
-    if (digits.startsWith("7") && digits.length === 9) return `0${digits}`;
-    if (digits.startsWith("07") && digits.length === 10) return digits;
-
-    return input;
-  }
-
   function submitData(data) {
-    const phone = normalizeKenyanPhoneClient(data.phone);
+    const phone = data.phone;
     logInFn(
       { ...data, phone },
       {
@@ -96,15 +85,10 @@ export default function Login() {
               <input
                 type="tel"
                 inputMode="tel"
-                maxLength="13"
                 name="phone"
                 placeholder="0700 000 000"
                 {...register("phone", {
                   required: "Phone number is required",
-                  pattern: {
-                    value: /^(\+254|0)?7\d{8}$/,
-                    message: "Enter a valid Kenyan phone number",
-                  },
                 })}
                 className="w-full bg-secondary/40 text-[rgb(151,137,205)]/90 border-2 border-primary/70 rounded-md px-4 py-3 text-sm placeholder-[rgb(151,137,205)]/90 outline-none focus:ring-2 focus:ring-primary transition"
               />
