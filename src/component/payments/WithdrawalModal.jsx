@@ -14,9 +14,8 @@ import { debouncedWithdraw } from "../../utils/debounce";
 import { withdrawalCallbackUrl } from "../../utils/configs";
 
 export default function WithdrawalModal({ onClose }) {
-  const [withdrawType, setWithdrawType] = useState("telkom"); // "telkom" or "other"
+  const [withdrawType, setWithdrawType] = useState("tkash"); // "tkash", "mpesa", or "airtel"
   const [withdrawAmount, setWithdrawAmount] = useState(100);
-  const [destinationPhone, setDestinationPhone] = useState("");
   const [localBalance, setLocalBalance] = useState(500); // Session balance
   const presetAmounts = [100, 250, 500, 1000, 1500];
   const { balance } = useUpdateBalance();
@@ -30,19 +29,6 @@ export default function WithdrawalModal({ onClose }) {
       setLocalBalance(balance.balance);
     }
   }, [balance?.balance]);
-
-  // Auto-populate destination phone with registered number when "other" is selected
-  useEffect(() => {
-    if (withdrawType === "other" && baseClass?.phone) {
-      const formattedPhone = validateAndFormatPhoneNumber(baseClass.phone);
-      if (formattedPhone) {
-        setDestinationPhone(formattedPhone);
-      }
-    } else if (withdrawType === "telkom") {
-      // Clear destination phone when switching back to telkom
-      setDestinationPhone("");
-    }
-  }, [withdrawType, baseClass?.phone]);
 
   // Validate and format phone number to +254 format
   const validateAndFormatPhoneNumber = (phone) => {
@@ -86,7 +72,7 @@ export default function WithdrawalModal({ onClose }) {
       if (isWithdrawing || isWithdrawingToOther) return;
 
       const amount = +withdrawAmount;
-      const currentBalance = withdrawType === "other" ? localBalance : (balance?.balance || 0);
+      const currentBalance = balance?.balance || 0;
 
       if (currentBalance === 0) {
         return toast.error(
@@ -104,8 +90,8 @@ export default function WithdrawalModal({ onClose }) {
         return toast.error("Withdrawals start at Ksh 100 and above.");
       }
 
-      if (withdrawType === "telkom") {
-        // Withdraw to Telkom (existing flow)
+      if (withdrawType === "tkash") {
+        // Withdraw to T-Kash (uses Telkom API)
         const phoneNumber = validateAndFormatPhoneNumber(baseClass?.phone);
         if (!phoneNumber || !isValidPhoneFormat(baseClass?.phone)) {
           return toast.error("Phone number must be in format +254XXXXXXXXX");
@@ -133,9 +119,8 @@ export default function WithdrawalModal({ onClose }) {
             },
           }
         );
-      } else {
-        // Withdraw to other provider
-        // Auto-populate with registered phone number (already set via useEffect)
+      } else if (withdrawType === "mpesa" || withdrawType === "airtel") {
+        // Withdraw to M-Pesa or Airtel Money (both use other provider API)
         const destPhone = validateAndFormatPhoneNumber(baseClass?.phone);
         if (!destPhone) {
           return toast.error("Unable to process withdrawal. Please contact support.");
@@ -155,7 +140,6 @@ export default function WithdrawalModal({ onClose }) {
           {
             onSuccess: () => {
               setWithdrawAmount(100);
-              setDestinationPhone("");
               onClose();
             },
             onError: (err) => {
@@ -163,7 +147,7 @@ export default function WithdrawalModal({ onClose }) {
               setLocalBalance(prev => prev + amount);
               toast.error(
                 err?.message ||
-                  `Withdrawal to other provider failed`
+                  `Withdrawal failed`
               );
             },
           }
@@ -190,24 +174,34 @@ export default function WithdrawalModal({ onClose }) {
           {/* Withdrawal Type Tabs */}
           <div className="flex gap-2 mb-5 bg-secondary rounded-lg p-1">
             <button
-              onClick={() => setWithdrawType("telkom")}
+              onClick={() => setWithdrawType("tkash")}
               className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${
-                withdrawType === "telkom"
+                withdrawType === "tkash"
                   ? "bg-primary text-black"
                   : "text-[rgb(151,137,205)]/90 hover:text-white"
               }`}
             >
-              To Telkom
+              T-Kash
             </button>
             <button
-              onClick={() => setWithdrawType("other")}
+              onClick={() => setWithdrawType("mpesa")}
               className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${
-                withdrawType === "other"
+                withdrawType === "mpesa"
                   ? "bg-primary text-black"
                   : "text-[rgb(151,137,205)]/90 hover:text-white"
               }`}
             >
-              To Other
+              M-Pesa
+            </button>
+            <button
+              onClick={() => setWithdrawType("airtel")}
+              className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${
+                withdrawType === "airtel"
+                  ? "bg-primary text-black"
+                  : "text-[rgb(151,137,205)]/90 hover:text-white"
+              }`}
+            >
+              Airtel Money
             </button>
           </div>
 
@@ -217,41 +211,16 @@ export default function WithdrawalModal({ onClose }) {
             {baseClass?.phone ? validateAndFormatPhoneNumber(baseClass?.phone) : `KE ${baseClass?.phone || 'N/A'}`}
           </div>
           <p className="text-sm text-[rgb(151,137,205)]/90 my-4 font-normal">
-            {withdrawType === "telkom" 
-              ? "Funds will be sent to your registered Telkom number"
-              : (
-                <span className="flex items-center justify-between">
-                  <span>Available Balance:</span>
-                  <span className="font-bold text-primary text-lg">KES {localBalance.toLocaleString()}</span>
-                </span>
-              )}
+            {withdrawType === "tkash" 
+              ? "Funds will be sent to your registered T-Kash number"
+              : withdrawType === "mpesa"
+              ? "Funds will be sent to your registered M-Pesa number"
+              : "Funds will be sent to your registered Airtel Money number"}
           </p>
-
-          {/* Destination Phone Number (for Other providers) */}
-          {withdrawType === "other" && (
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-[rgb(151,137,205)]/90 mb-2">
-                Destination Phone Number <span className="text-red-400">*</span>
-              </label>
-              <div className="relative">
-                <input
-                  type="tel"
-                  value={destinationPhone}
-                  readOnly
-                  disabled
-                  className="w-full px-4 py-3 rounded-lg bg-secondary/50 text-[rgb(151,137,205)]/70 border-2 border-[#444] outline-none text-sm cursor-not-allowed"
-                />
-                {destinationPhone && isValidPhoneFormat(destinationPhone) && (
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-green-400 text-lg">
-                    ✓
-                  </span>
-                )}
-              </div>
-              <p className="text-xs text-[rgb(151,137,205)]/70 mt-2">
-                Using your registered phone number
-              </p>
-            </div>
-          )}
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-sm text-[rgb(151,137,205)]/90">Available Balance:</span>
+            <span className="font-bold text-primary text-lg">KES {localBalance.toLocaleString()}</span>
+          </div>
 
           {/* Preset Amounts */}
           <div className="flex rounded-lg overflow-hidden border border-[#444] mb-4">
@@ -289,7 +258,6 @@ export default function WithdrawalModal({ onClose }) {
           {/* Max Note */}
           <p className="text-xs text-[rgb(151,137,205)]/90 mb-4 font-normal">
             Minimum withdrawal amount is KES 100.00
-            {withdrawType === "other" && ` | Available: KES ${localBalance.toLocaleString()}`}
           </p>
 
           {/* Withdraw Button */}
