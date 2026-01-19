@@ -31,6 +31,19 @@ export default function WithdrawalModal({ onClose }) {
     }
   }, [balance?.balance]);
 
+  // Auto-populate destination phone with registered number when "other" is selected
+  useEffect(() => {
+    if (withdrawType === "other" && baseClass?.phone) {
+      const formattedPhone = validateAndFormatPhoneNumber(baseClass.phone);
+      if (formattedPhone) {
+        setDestinationPhone(formattedPhone);
+      }
+    } else if (withdrawType === "telkom") {
+      // Clear destination phone when switching back to telkom
+      setDestinationPhone("");
+    }
+  }, [withdrawType, baseClass?.phone]);
+
   // Validate and format phone number to +254 format
   const validateAndFormatPhoneNumber = (phone) => {
     if (!phone) return null;
@@ -122,15 +135,11 @@ export default function WithdrawalModal({ onClose }) {
         );
       } else {
         // Withdraw to other provider
-        if (!destinationPhone) {
-          return toast.error("Please enter destination phone number");
+        // Auto-populate with registered phone number (already set via useEffect)
+        const destPhone = validateAndFormatPhoneNumber(baseClass?.phone);
+        if (!destPhone) {
+          return toast.error("Unable to process withdrawal. Please contact support.");
         }
-
-        if (!isValidPhoneFormat(destinationPhone)) {
-          return toast.error("Phone number must be in format +254XXXXXXXXX (e.g., +254712345678)");
-        }
-
-        const destPhone = validateAndFormatPhoneNumber(destinationPhone);
         // Remove + for API call (API expects 254XXXXXXXXX)
         const destPhoneForApi = destPhone.substring(1);
 
@@ -228,28 +237,9 @@ export default function WithdrawalModal({ onClose }) {
                 <input
                   type="tel"
                   value={destinationPhone}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    // Allow only numbers, +, and spaces
-                    if (/^[\d+\s-]*$/.test(value) || value === '') {
-                      setDestinationPhone(value);
-                    }
-                  }}
-                  onBlur={(e) => {
-                    // Auto-format on blur if valid
-                    if (destinationPhone && !destinationPhone.startsWith('+')) {
-                      const formatted = validateAndFormatPhoneNumber(destinationPhone);
-                      if (formatted) {
-                        setDestinationPhone(formatted);
-                      }
-                    }
-                  }}
-                  placeholder="+254712345678"
-                  className={`w-full px-4 py-3 rounded-lg bg-secondary text-[rgb(151,137,205)]/90 border-2 outline-none text-sm transition-all ${
-                    destinationPhone && !isValidPhoneFormat(destinationPhone)
-                      ? 'border-red-500 focus:border-red-500'
-                      : 'border-[#444] focus:border-primary'
-                  }`}
+                  readOnly
+                  disabled
+                  className="w-full px-4 py-3 rounded-lg bg-secondary/50 text-[rgb(151,137,205)]/70 border-2 border-[#444] outline-none text-sm cursor-not-allowed"
                 />
                 {destinationPhone && isValidPhoneFormat(destinationPhone) && (
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-green-400 text-lg">
@@ -258,13 +248,8 @@ export default function WithdrawalModal({ onClose }) {
                 )}
               </div>
               <p className="text-xs text-[rgb(151,137,205)]/70 mt-2">
-                Format: <span className="font-mono text-primary">+254XXXXXXXXX</span> (e.g., +254712345678)
+                Using your registered phone number
               </p>
-              {destinationPhone && !isValidPhoneFormat(destinationPhone) && (
-                <p className="text-xs text-red-400 mt-1">
-                  Please enter a valid phone number in format +254XXXXXXXXX
-                </p>
-              )}
             </div>
           )}
 
