@@ -62,17 +62,23 @@ export function useUpdateBalance() {
   const { data: balance, isLoading } = useQuery({
     queryKey: ["user-balance"],
     queryFn: paymentService.updateBalance.bind(paymentService),
+    // Refresh balance every 30 seconds
+    refetchInterval: 30000,
+    refetchIntervalInBackground: true,
+    staleTime: 0,
   });
 
-  // Hardcode balance to KES 500
-  const hardcodedBalance = {
-    balance: 500,
+  // Normalize external balance response into a consistent shape
+  const normalizedBalance = {
+    // main wallet balance from external API
+    balance: typeof balance?.balance === "number" ? balance.balance : 0,
+    // keep additional fields for existing UI, defaulting to 0
     referralBonus: balance?.referralBonus ?? 0,
     cashback: balance?.cashback ?? 0,
     referralsCount: balance?.referralsCount ?? 0,
   };
 
-  return { balance: hardcodedBalance, isLoading };
+  return { balance: normalizedBalance, isLoading };
 }
 export function useTransactionsHistory() {
   const paymentService = new PaymentService();

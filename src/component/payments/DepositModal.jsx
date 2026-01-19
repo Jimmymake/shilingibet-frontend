@@ -5,7 +5,7 @@ import BaseClass from "../../services/BaseClass";
 import {
   useCryptoDeposit,
   useCryptoUpdateDeposit,
-  useDeposit,
+  useUpdateBalance,
 } from "../../hooks/usePayment";
 
 export default function PaymentModal({ isOpen, setIsOpen }) {
@@ -13,11 +13,10 @@ export default function PaymentModal({ isOpen, setIsOpen }) {
   const [transactionID, setTransactionID] = useState("");
   const [tab, setTab] = useState("telkom");
   const [copied, setCopied] = useState(false);
-  const [amount, setAmount] = useState("");
   const { depositCrypto, isLoading: isDepositingCrypto } = useCryptoDeposit();
   const { depositCrypto: updatingCryptoBalance } =
     useCryptoUpdateDeposit();
-  const { makingPayment, isLoading: isMakingPayment } = useDeposit();
+  const { balance, isLoading: isBalanceLoading } = useUpdateBalance();
 
   const cryptoAddress = "TDar6Jvdb8Hs4MhawzpXUEyXUSg2R6qpMk";
 
@@ -82,28 +81,10 @@ export default function PaymentModal({ isOpen, setIsOpen }) {
     );
   }
 
-  async function handleTelkomPayment(e) {
-    if(!amount) return;
-
-    e.preventDefault();
-
-    makingPayment(
-      {amount},
-      {
-        onSuccess: (res) => {
-          if (res.status !== true) {
-            toast.error(
-              res?.data?.message ?? "Something went wrong try again later"
-            );
-          } else {
-            setIsOpen(false);
-          }
-        },
-        onError: (err) => {
-          toast.error(err?.message ?? "Something went wrong");
-        },
-      }
-    );
+  async function handleTelkomDone() {
+    // Simply close and rely on polling to refresh balance
+    toast.success("Deposit steps completed. Fetching latest balance...");
+    setIsOpen(false);
   }
 
   return (
@@ -153,23 +134,6 @@ export default function PaymentModal({ isOpen, setIsOpen }) {
                 <h3 className="text-lg font-semibold mb-3 text-white">
                   Deposit via Telkom
                 </h3>
-                
-                <div className="mt-4">
-                  <label className="block text-sm text-gray-400 mb-1">
-                    Enter Amount (KES)
-                  </label>
-                  <div className="relative">
-                    <input
-                    onChange={(e) => setAmount(e.target.value)}
-                      type="number"
-                      placeholder="e.g. 1500"
-                      className="w-full bg-[#0e0e0e] border border-[#333] rounded-lg px-4 py-3 text-sm text-gray-200 font-medium focus:outline-none focus:border-[#f5c542] focus:shadow-[0_0_10px_rgba(245,197,66,0.2)] transition placeholder-gray-500"
-                    />
-                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[#f5c542] font-semibold text-sm">
-                      KES
-                    </span>
-                  </div>
-                </div>
 
                 <div className="mt-6 bg-[#0e0e0e] border border-[#333] rounded-lg p-4">
                   <h4 className="text-sm font-semibold text-white mb-3">Follow these steps to deposit:</h4>
@@ -186,8 +150,18 @@ export default function PaymentModal({ isOpen, setIsOpen }) {
                   </ol>
                 </div>
 
-                <button disabled={isMakingPayment} onClick={handleTelkomPayment} className="mt-6 w-full py-3 bg-[#f5c542] text-black font-semibold rounded-xl hover:bg-[#ffd84f] transition">
-                {isMakingPayment ? "Processing Payment" : "Complete Payment"}  
+                <div className="mt-4 text-sm text-gray-400">
+                  <span className="font-semibold text-white">Current Balance: </span>
+                  {isBalanceLoading
+                    ? "Loading..."
+                    : `KES ${Number(balance?.balance || 0).toLocaleString()}`}
+                </div>
+
+                <button
+                  onClick={handleTelkomDone}
+                  className="mt-6 w-full py-3 bg-[#f5c542] text-black font-semibold rounded-xl hover:bg-[#ffd84f] transition"
+                >
+                  Done
                 </button>
               </div>
             )}

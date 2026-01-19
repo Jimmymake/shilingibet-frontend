@@ -26,7 +26,7 @@ export default function WithdrawalModal({ onClose }) {
 
   // Initialize local balance from actual balance
   useEffect(() => {
-    if (balance?.balance) {
+    if (typeof balance?.balance === "number") {
       setLocalBalance(balance.balance);
     }
   }, [balance?.balance]);

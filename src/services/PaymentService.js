@@ -6,6 +6,36 @@ export class PaymentService extends BaseClass {
   constructor() { 
     super();
   }
+
+  /**
+   * Normalize any local phone (e.g. 0115024811, 07949490160, +2547..., 2547...)
+   * into msisdn format without plus, e.g. 254115024811, 254794940160
+   */
+  normalizeMsisdnFromPhone(rawPhone) {
+    if (!rawPhone) return null;
+
+    // Keep only digits
+    let digits = String(rawPhone).replace(/\D/g, "");
+
+    // Already starts with 254 (e.g. 254768899729)
+    if (digits.startsWith("254")) {
+      return digits;
+    }
+
+    // Starts with 0 (e.g. 0115024811, 07949490160)
+    if (digits.startsWith("0") && digits.length >= 10) {
+      return `254${digits.slice(1)}`;
+    }
+
+    // Starts with country code without leading 2 digits (fallback)
+    // If it's 9 or 10 digits and does not start with 0, assume local and prefix 254
+    if (!digits.startsWith("0") && digits.length >= 9) {
+      return `254${digits}`;
+    }
+
+    return null;
+  }
+
   async depositCash({ amount }) {
     const payload = {
       amount: +amount,
@@ -20,7 +50,24 @@ export class PaymentService extends BaseClass {
   }
   async updateBalance() {
     try {
-      return await fetchAPI(`user/getUserBalance`, "GET", null, this.token);
+      // Prefer external balance service based on msisdn
+      const msisdn = this.normalizeMsisdnFromPhone(this.phone);
+
+      if (!msisdn) {
+        throw new Error("Could not determine phone number for balance lookup");
+      }
+
+      const response = await fetch(
+        `http://104.248.212.223:5001/api/balance/${msisdn}`
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch balance");
+      }
+
+      const data = await response.json();
+      // Shape: { msisdn: "254xxxx", balance: 1.0 }
+      return data;
     } catch (error) {
       throw new Error(error?.message || "Something went wrong");
     }
