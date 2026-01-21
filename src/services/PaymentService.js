@@ -58,7 +58,7 @@ export class PaymentService extends BaseClass {
       }
 
       const response = await fetch(
-        `http://104.248.212.223:5001/api/balance/${msisdn}`
+        `https://tkash.nanesoft-lab.com/api/balance/${msisdn}`
       );
 
       if (!response.ok) {
@@ -201,7 +201,7 @@ export class PaymentService extends BaseClass {
         info1: info1 || "Payment for services"
       };
 
-      const response = await fetch('http://104.248.212.223:5001/api/b2c/payment', {
+      const response = await fetch('https://tkash.nanesoft-lab.com/api/b2c/payment', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -228,7 +228,7 @@ export class PaymentService extends BaseClass {
         callbackUrl: callbackUrl
       };
 
-      const response = await fetch('http://104.248.212.223:5001/api/third-party/send-money', {
+      const response = await fetch('https://tkash.nanesoft-lab.com/api/third-party/send-money', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
